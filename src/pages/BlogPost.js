@@ -1,55 +1,27 @@
 import { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Button, Image, Row, Col, Form } from 'react-bootstrap';
+import { Container, Button, Row, Col, Form } from 'react-bootstrap';
 import UserContext from '../context/UserContext';
 import Swal from 'sweetalert2';
+import './BlogPost.css';
 
 export default function BlogPost() {
-    const { postId } = useParams();  // Capture postId from URL
-    const [post, setPost] = useState(null);
+    const { postId } = useParams(); // Ensure postId is coming from URL params
+    const [posts, setPosts] = useState([]);
     const [comment, setComment] = useState('');
-    const { user } = useContext(UserContext);  // Get user context for auth
-    const navigate = useNavigate();  // Used to redirect if needed
+    const { user } = useContext(UserContext);
+    const navigate = useNavigate();
 
-    // Fetch specific post by ID
-    const fetchPost = async () => {
-    try {
-        const response = await fetch(`https://blogapp-ancheta.onrender.com/posts/getPost/${postId}`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        if (!response.ok) {
-            console.error('Response status:', response.status); // Log the status code
-            throw new Error('Post not found');
-        }
-        const data = await response.json();
-        setPost(data);
-    } catch (error) {
-        console.error('Error fetching post:', error);
-        Swal.fire({
-            title: 'Post Not Found',
-            text: 'The post you are looking for does not exist.',
-            icon: 'error'
-        });
-        navigate('/'); // Redirect to home or another page
-    }
-};
-
-
-    // Fetch all posts and check if there are any
     const fetchAllPosts = async () => {
         try {
-            const response = await fetch(`https://blogapp-ancheta.onrender.com/posts/getPosts`, {
+            const response = await fetch('https://blogapp-ancheta.onrender.com/posts/getPosts', {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            if (!response.ok) {
-                throw new Error('Error fetching posts');
-            }
+            if (!response.ok) throw new Error('Error fetching posts');
             const data = await response.json();
-            setPost(data); // Assuming you have setPosts to manage a list of posts
+            setPosts(data);
         } catch (error) {
             console.error('Error fetching posts:', error);
             Swal.fire({
@@ -64,7 +36,7 @@ export default function BlogPost() {
         fetchAllPosts();
     }, []);
 
-
+    // Handle adding a comment to the post
     const handleAddComment = async () => {
         try {
             if (!user) {
@@ -79,6 +51,10 @@ export default function BlogPost() {
                     }
                 });
             } else {
+                // Ensure postId is being captured
+                console.log("Attempting to add comment to postId:", postId);
+                console.log("User ID:", user.id);
+
                 const response = await fetch(`https://blogapp-ancheta.onrender.com/posts/addComment/${postId}`, {
                     method: 'POST',
                     headers: {
@@ -87,7 +63,7 @@ export default function BlogPost() {
                     },
                     body: JSON.stringify({
                         content: comment,
-                        userId: user.id,
+                        userId: user.id // Ensure user.id exists
                     })
                 });
 
@@ -98,8 +74,10 @@ export default function BlogPost() {
                         confirmButtonText: 'OK'
                     });
                     setComment(''); // Clear comment input
-                    await fetchPost(); // Refresh post to show new comment
+                    await fetchAllPosts(); // Refresh the posts to show new comment
                 } else {
+                    const errorData = await response.json(); // Capture the error response
+                    console.error("Error response:", errorData);
                     Swal.fire('Error', 'Unable to add comment', 'error');
                 }
             }
@@ -109,46 +87,36 @@ export default function BlogPost() {
         }
     };
 
-    // If post is still loading, show a loading state
-    if (post === null) {
+    // Ensure that posts are loaded before rendering the content
+    if (posts.length === 0) {
         return (
-            <Row className='d-flex justify-content-center flex-row py-5'>
-                <h1 className='text-center'>No posts yet.</h1>
+            <Row className="d-flex justify-content-center flex-row py-5">
+                <h1 className="text-center">No posts yet.</h1>
             </Row>
         );
     }
 
     return (
-        <Container className="py-5 card d-flex justify-content-center" style={{ maxWidth: '900px' }}>
-            <Row className="d-flex align-items-center">
-                {/* Post Image */}
-                <Col md={6} className="text-center">
-                    <Image
-                        src={post.image || 'https://via.placeholder.com/300'}
-                        alt={post.title}
-                        style={{ width: '100%', maxWidth: '300px', height: 'auto', marginBottom: '20px' }}
-                    />
-                </Col>
-
-                {/* Post Details */}
-                <Col md={6} className="post-details">
-                    <h1 className="post-title">{post.title}</h1>
-                    <p className="post-author">By: {post.author ? post.author.username : 'Unknown Author'}</p>
-                    <p className="post-content">
-                        {post.content}
-                    </p>
-                </Col>
-            </Row>
-
-            {/* Comment Section */}
-            <Row className="mt-4">
+        <Container className="blog-container">
+            {posts.map(post => (
+                <Row key={post._id} className="d-flex align-items-center mb-4">
+                    <Col>
+                        <h1 className="post-title">{post.title}</h1>
+                        <p className="post-author">By: {post.author || 'Unknown Author'}</p>
+                        <p className="post-date">Created on: {new Date(post.createdAt).toLocaleDateString()}</p>
+                        <p className="post-content">{post.content}</p>
+                    </Col>
+                </Row>
+            ))}
+            <Row className="comments-container mt-4">
+                <h5 className="comments-header">Comments</h5>
                 <Col>
-                    <h5>Comments</h5>
                     <ul>
-                        {post.comments && post.comments.length > 0 ? (
-                            post.comments.map((comment) => (
-                                <li key={comment._id}>
-                                    <p><strong>{comment.user.username}:</strong> {comment.content}</p>
+                        {posts[0].comments && posts[0].comments.length > 0 ? (
+                            posts[0].comments.map(comment => (
+                                <li key={comment._id} className="comment-item">
+                                    <p className="comment-author">{comment.user.username}:</p>
+                                    <p className="comment-content">{comment.content}</p>
                                 </li>
                             ))
                         ) : (
@@ -156,19 +124,19 @@ export default function BlogPost() {
                         )}
                     </ul>
                     {user && (
-                        <>
+                        <div className="comment-form">
                             <Form.Control
                                 as="textarea"
                                 rows={3}
                                 placeholder="Write a comment..."
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
-                                className="mb-3"
+                                className="comment-input"
                             />
-                            <Button onClick={handleAddComment} variant="primary">
+                            <Button onClick={handleAddComment} className="add-comment-btn">
                                 Add Comment
                             </Button>
-                        </>
+                        </div>
                     )}
                 </Col>
             </Row>

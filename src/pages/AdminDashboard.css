@@ -1,0 +1,63 @@
+.admin-dashboard {
+    background-color: #f8f9fa; /* Light background for the dashboard */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-dashboard h1 {
+    font-size: 2.5rem;
+    color: #343a40; /* Dark color for headings */
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.dashboard-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.posts-table {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.posts-table th {
+    background-color: #007bff; /* Bootstrap primary color */
+    color: white;
+    padding: 10px;
+    text-align: left;
+}
+
+.posts-table td {
+    padding: 10px;
+    vertical-align: middle; /* Center-align table cell content */
+}
+
+.posts-table img {
+    border-radius: 4px; /* Rounded corners for images */
+}
+
+.action-btn {
+    margin-right: 10px;
+}
+
+.modal-title {
+    font-weight: bold;
+    color: #007bff; /* Bootstrap primary color for modal title */
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modal-footer button {
+    margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+    .admin-dashboard h1 {
+        font-size: 1.8rem; /* Adjust heading size for smaller screens */
+    }
+}

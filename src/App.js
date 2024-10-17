@@ -51,14 +51,29 @@ function App() {
                 <AppNavbar />
                 <Container>
                     <Routes>
+                        {/* Home page route */}
                         <Route path="/" element={<Home />} />
-                        <Route path="/blogposts" element={<BlogPost />} />
-                        <Route path="/post/:postId" element={<BlogPost />} /> {/* Route for individual blog post */}
+                        
+                        {/* Route to list all blog posts */}
+                        <Route path="/blogposts" element={<BlogPost />} /> 
+
+                        {/* Route for individual blog post */}
+                        <Route path="/post/:postId" element={<BlogPost />} />
+
+                        {/* Authentication routes */}
                         <Route path="/register" element={<Register />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/logout" element={<Logout />} />
-                        <Route path="/createPost" element={<CreatePost />} /> {/* Route for creating new posts */}
-                        {user.isAdmin && <Route path="/admin-dashboard" element={<AdminDashboard />} />} {/* Admin Dashboard route */}
+
+                        {/* Route for creating a post */}
+                        <Route path="/createPost" element={<CreatePost />} />
+
+                        {/* Admin dashboard (conditionally render the route based on user.isAdmin) */}
+                        {user.isAdmin && (
+                            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                        )}
+
+                        {/* Catch-all error route */}
                         <Route path="*" element={<Error />} />
                     </Routes>
                 </Container>

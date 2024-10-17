@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Button, Table, Modal, Form } from 'react-bootstrap';
 import Swal from 'sweetalert2';
+import './AdminDashboard.css';
 
 export default function AdminDashboard() {
     const [posts, setPosts] = useState([]);
-    const [showModal, setShowModal] = useState(false); 
-    const [showUpdateModal, setShowUpdateModal] = useState(false); 
-    const [newPostTitle, setNewPostTitle] = useState(''); 
+    const [showModal, setShowModal] = useState(false);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [newPostTitle, setNewPostTitle] = useState('');
     const [newPostContent, setNewPostContent] = useState('');
-    const [newPostImage, setNewPostImage] = useState('');
-    const [selectedPostId, setSelectedPostId] = useState(null); 
+    const [newPostAuthor, setNewPostAuthor] = useState('');
+    const [newPostCreationDate, setNewPostCreationDate] = useState('');
+    const [selectedPostId, setSelectedPostId] = useState(null);
 
     const fetchPosts = async () => {
         try {
@@ -25,7 +26,7 @@ export default function AdminDashboard() {
             }
 
             const data = await response.json();
-            setPosts(data);  
+            setPosts(data); // Assuming `author` is already a string in each post object
         } catch (error) {
             Swal.fire({
                 title: 'Error',
@@ -50,7 +51,8 @@ export default function AdminDashboard() {
                 body: JSON.stringify({
                     title: newPostTitle,
                     content: newPostContent,
-                    image: newPostImage
+                    author: newPostAuthor,
+                    createdAt: newPostCreationDate
                 })
             });
 
@@ -67,7 +69,8 @@ export default function AdminDashboard() {
             setShowModal(false);
             setNewPostTitle('');
             setNewPostContent('');
-            setNewPostImage('');
+            setNewPostAuthor('');
+            setNewPostCreationDate('');
 
             await fetchPosts();
 
@@ -81,21 +84,23 @@ export default function AdminDashboard() {
     };
 
     const handleUpdate = (postId, post) => {
-        setSelectedPostId(postId); 
-        setNewPostTitle(post.title); 
-        setNewPostContent(post.content); 
-        setNewPostImage(post.image); 
+        setSelectedPostId(postId);
+        setNewPostTitle(post.title);
+        setNewPostContent(post.content);
+        setNewPostAuthor(post.author);
+        setNewPostCreationDate(new Date(post.createdAt).toISOString().slice(0, 10));
         setShowUpdateModal(true);
     };
 
     const handleSaveUpdate = async () => {
-        try {
-            const updateData = {
-                title: newPostTitle,
-                content: newPostContent,
-                image: newPostImage
-            };
+        const updateData = {
+            title: newPostTitle,
+            content: newPostContent,
+            author: newPostAuthor,
+            createdAt: newPostCreationDate
+        };
 
+        try {
             const response = await fetch(`https://blogapp-ancheta.onrender.com/posts/updatePost/${selectedPostId}`, {
                 method: 'PUT',
                 headers: {
@@ -116,9 +121,9 @@ export default function AdminDashboard() {
             });
 
             setShowUpdateModal(false);
-            await fetchPosts(); 
-
+            await fetchPosts();
         } catch (error) {
+            console.error("Error updating post:", error);
             Swal.fire({
                 title: 'Error',
                 icon: 'error',
@@ -127,7 +132,9 @@ export default function AdminDashboard() {
         }
     };
 
+
     const handleDeletePost = async (postId) => {
+        console.log("Attempting to delete post with ID:", postId); // Log the post ID
         try {
             const response = await fetch(`https://blogapp-ancheta.onrender.com/posts/deletePost/${postId}`, {
                 method: 'DELETE',
@@ -138,6 +145,8 @@ export default function AdminDashboard() {
             });
 
             if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Error deleting post:", errorData);
                 throw new Error('Failed to delete post');
             }
 
@@ -147,9 +156,10 @@ export default function AdminDashboard() {
                 text: 'Post deleted successfully!',
             });
 
-            await fetchPosts(); 
+            await fetchPosts();
 
         } catch (error) {
+            console.error("Error:", error);
             Swal.fire({
                 title: 'Error',
                 icon: 'error',
@@ -157,6 +167,7 @@ export default function AdminDashboard() {
             });
         }
     };
+
 
     return (
     <>
@@ -171,20 +182,20 @@ export default function AdminDashboard() {
                 <Table striped bordered hover className="posts-table">
                     <thead>
                         <tr>
-                            <th>Image</th>
                             <th>Title</th>
                             <th>Content</th>
+                            <th>Author</th>
+                            <th>Creation Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {posts.map(post => (
                             <tr key={post._id}>
-                                <td>
-                                    <img src={ post.image } alt="Post" style={{width:'100px'}} />
-                                </td>
                                 <td>{post.title}</td>
                                 <td>{post.content.slice(0, 100)}...</td>
+                                <td>{typeof post.author === 'string' ? post.author : 'Unknown Author'}</td>
+                                <td>{new Date(post.createdAt).toLocaleDateString()}</td>
                                 <td>
                                     <Button className="action-btn btn btn-primary" variant="primary" onClick={() => handleUpdate(post._id, post)}>Update</Button>
                                     <Button className="action-btn btn btn-danger ml-2" variant="danger" onClick={() => handleDeletePost(post._id)}>Delete</Button>
@@ -216,9 +227,14 @@ export default function AdminDashboard() {
                             <Form.Control as="textarea" rows={4} placeholder="Enter content" value={newPostContent} onChange={(e) => setNewPostContent(e.target.value)} />
                         </Form.Group>
 
-                        <Form.Group controlId="formPostImage">
-                            <Form.Label>Image URL</Form.Label>
-                            <Form.Control type="text" placeholder="Enter image URL" value={newPostImage} onChange={(e) => setNewPostImage(e.target.value)} />
+                        <Form.Group controlId="formPostAuthor">
+                            <Form.Label>Author</Form.Label>
+                            <Form.Control type="text" placeholder="Enter author name" value={newPostAuthor} onChange={(e) => setNewPostAuthor(e.target.value)} />
+                        </Form.Group>
+
+                        <Form.Group controlId="formPostCreationDate">
+                            <Form.Label>Creation Date</Form.Label>
+                            <Form.Control type="date" value={newPostCreationDate} onChange={(e) => setNewPostCreationDate(e.target.value)} />
                         </Form.Group>
                     </Form>
                 </Modal.Body>
@@ -249,9 +265,14 @@ export default function AdminDashboard() {
                             <Form.Control as="textarea" rows={4} placeholder="Enter content" value={newPostContent} onChange={(e) => setNewPostContent(e.target.value)} />
                         </Form.Group>
 
-                        <Form.Group controlId="formPostImage">
-                            <Form.Label>Image URL</Form.Label>
-                            <Form.Control type="text" placeholder="Enter image URL" value={newPostImage} onChange={(e) => setNewPostImage(e.target.value)} />
+                        <Form.Group controlId="formPostAuthor">
+                            <Form.Label>Author</Form.Label>
+                            <Form.Control type="text" placeholder="Enter author name" value={newPostAuthor} onChange={(e) => setNewPostAuthor(e.target.value)} />
+                        </Form.Group>
+
+                        <Form.Group controlId="formPostCreationDate">
+                            <Form.Label>Creation Date</Form.Label>
+                            <Form.Control type="date" value={newPostCreationDate} onChange={(e) => setNewPostCreationDate(e.target.value)} />
                         </Form.Group>
                     </Form>
                 </Modal.Body>
